@@ -1,0 +1,6 @@
+{
+  "name": "FaceAttend",
+  "description": "Face Recognition Attendance App with live face verification, daily IN/OUT rules, and Firestore attendance history.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

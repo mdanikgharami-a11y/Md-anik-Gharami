@@ -1,0 +1,183 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered user profile with full name and original face reference photo.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the account owner."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name entered during account registration."
+        },
+        "email": {
+          "type": "string",
+          "description": "Google account email address."
+        },
+        "photoBase64": {
+          "type": "string",
+          "description": "Compressed JPEG Base64 string of the original registered face reference photo."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when account was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "fullName", "photoBase64", "createdAt", "updatedAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Permanent daily attendance record keyed by YYYY-MM-DD preventing duplicate IN/OUT and client time tampering.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user."
+        },
+        "userName": {
+          "type": "string",
+          "description": "User full name at the time of attendance."
+        },
+        "dateKey": {
+          "type": "string",
+          "description": "Date key in YYYY-MM-DD format matching the document ID."
+        },
+        "inTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp of daily Check-IN (FieldValue.serverTimestamp())."
+        },
+        "outTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp of daily Check-OUT (FieldValue.serverTimestamp())."
+        },
+        "inConfidence": {
+          "type": "integer",
+          "description": "Face verification confidence percentage for Check-IN."
+        },
+        "outConfidence": {
+          "type": "integer",
+          "description": "Face verification confidence percentage for Check-OUT."
+        },
+        "faceVerificationStatus": {
+          "type": "string",
+          "enum": ["VERIFIED"],
+          "description": "Face verification status for accepted attendance."
+        },
+        "attendanceStatus": {
+          "type": "string",
+          "enum": ["CHECKED_IN", "COMPLETED"],
+          "description": "Current daily attendance status."
+        },
+        "starred": {
+          "type": "boolean",
+          "description": "Whether the user starred/favorited this attendance record."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "dateKey",
+        "inTime",
+        "inConfidence",
+        "faceVerificationStatus",
+        "attendanceStatus",
+        "starred",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "VerificationLog": {
+      "title": "VerificationLog",
+      "description": "Immutable audit log of all attendance and face verification attempts (successes and failures).",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user."
+        },
+        "userName": {
+          "type": "string",
+          "description": "User full name."
+        },
+        "dateKey": {
+          "type": "string",
+          "description": "Date key in YYYY-MM-DD format."
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["IN", "OUT"],
+          "description": "Attempted action type."
+        },
+        "faceVerificationStatus": {
+          "type": "string",
+          "enum": ["VERIFIED", "FAILED", "SKIPPED"],
+          "description": "Outcome of biometric face comparison."
+        },
+        "attendanceStatus": {
+          "type": "string",
+          "enum": ["SUCCESS", "FAILED"],
+          "description": "Outcome of attendance validation."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Human-readable verification or rule validation message."
+        },
+        "confidence": {
+          "type": "integer",
+          "description": "Face match confidence percentage (0-100)."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Immutable server timestamp of attempt (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "userName",
+        "dateKey",
+        "actionType",
+        "faceVerificationStatus",
+        "attendanceStatus",
+        "reason",
+        "confidence",
+        "timestamp"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Registered user profile and original face reference photo."
+    },
+    "/users/{userId}/attendance/{dateKey}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Daily attendance records keyed by YYYY-MM-DD with immutable IN/OUT server timestamps."
+    },
+    "/users/{userId}/attendance_logs/{logId}": {
+      "schema": { "$ref": "#/entities/VerificationLog" },
+      "description": "Immutable audit trail of attendance verification attempts."
+    }
+  }
+}
