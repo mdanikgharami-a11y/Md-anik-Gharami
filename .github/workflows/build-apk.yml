@@ -42,11 +42,12 @@ jobs:
           if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
             base64 -d debug.keystore.base64 > debug.keystore
           fi
+          ls -la debug.keystore app/google-services.json || true
 
       - name: Build Debug APK
         env:
-          GRADLE_OPTS: "-Xmx4g -Dorg.gradle.jvmargs=-Xmx4g"
-        run: gradle :app:assembleDebug --console=plain
+          GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+        run: gradle :app:assembleDebug --no-daemon --no-configuration-cache --console=plain --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
