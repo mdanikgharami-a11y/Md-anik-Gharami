@@ -30,8 +30,9 @@ jobs:
           SDKMANAGER=$(find "$SDK_DIR/cmdline-tools" -name sdkmanager -type f 2>/dev/null | head -n 1 || true)
           if [ -n "$SDKMANAGER" ]; then
             yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-            yes | "$SDKMANAGER" "platforms;android-36.1" "build-tools;36.0.0" >/dev/null 2>&1 || yes | "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" >/dev/null 2>&1 || true
+            yes | "$SDKMANAGER" "platforms;android-36.1" "build-tools;36.0.0" >/dev/null || yes | "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0" >/dev/null || true
           fi
+          ls -la "$SDK_DIR/platforms" || true
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -40,16 +41,25 @@ jobs:
 
       - name: Restore debug keystore
         run: |
-          if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
+          if [ -s debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
             base64 -d debug.keystore.base64 > debug.keystore
+            echo "Restored debug.keystore from debug.keystore.base64"
           fi
+          if [ ! -s debug.keystore ]; then
+            echo "WARNING: debug.keystore.base64 missing; generating fallback debug.keystore"
+            keytool -genkeypair -noprompt -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          ls -lh debug.keystore
 
       - name: Build Debug APK
         env:
           GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
         run: |
           set -o pipefail
-          if ! gradle :app:assembleDebug --no-daemon --no-configuration-cache --max-workers=2 --console=plain > /tmp/gradle-build.log 2>&1; then
+          if ! gradle :app:assembleDebug --no-daemon --no-configuration-cache --no-build-cache --max-workers=2 --console=plain > /tmp/gradle-build.log 2>&1; then
+            echo "=== ERROR SUMMARY ==="
+            grep -E -A 2 "^(e: |> Task .*FAILED|FAILURE:|Execution failed|> )" /tmp/gradle-build.log | head -n 35 || true
+            echo "=== FULL LOG TAIL ==="
             tail -n 45 /tmp/gradle-build.log
             exit 1
           fi
