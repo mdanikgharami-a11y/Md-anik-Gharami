@@ -8,6 +8,8 @@ on:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -83,3 +85,22 @@ jobs:
           name: FaceAttend-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Publish APK to GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APK_FILE=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            echo "No APK file found to publish"
+            exit 1
+          fi
+          cp "$APK_FILE" FaceAttend-debug.apk
+          if gh release view latest-apk >/dev/null 2>&1; then
+            gh release upload latest-apk FaceAttend-debug.apk --clobber
+          else
+            gh release create latest-apk FaceAttend-debug.apk \
+              --title "FaceAttend Debug APK (Latest)" \
+              --notes "Tap FaceAttend-debug.apk below to download directly on your phone (no unzip needed)." \
+              --latest
+          fi
